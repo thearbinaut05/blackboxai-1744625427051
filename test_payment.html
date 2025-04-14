@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Subscription - Test Mode</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .StripeElement {
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: white;
+            margin-bottom: 1rem;
+        }
+        .StripeElement--focus {
+            border-color: #4f46e5;
+        }
+        .loading {
+            display: none;
+        }
+        .loading.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6">
+                <p class="text-yellow-700">
+                    <strong>Test Mode:</strong> Use card number 4242 4242 4242 4242 with any future expiry date and any CVC.
+                </p>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Premium Subscription</h2>
+            
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-lg font-medium text-gray-700">Monthly Plan</span>
+                    <span class="text-2xl font-bold text-indigo-600">$99.00</span>
+                </div>
+                <p class="text-gray-600 text-sm">Full access to all premium features</p>
+                <ul class="mt-4 space-y-2 text-sm text-gray-600">
+                    <li class="flex items-center">
+                        <svg class="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Unlimited access to all features
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Priority support
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="h-4 w-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        14-day free trial
+                    </li>
+                </ul>
+            </div>
+
+            <form id="payment-form" class="space-y-4">
+                <div class="form-row">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        required 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="your@email.com"
+                    >
+                </div>
+
+                <div class="form-row">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Card Information
+                    </label>
+                    <div id="card-element" class="w-full"></div>
+                    <div id="card-errors" class="text-red-600 text-sm mt-1" role="alert"></div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    id="submit-button"
+                    class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
+                >
+                    <span id="button-text">Start Free Trial</span>
+                    <div id="loading" class="loading">
+                        Processing...
+                    </div>
+                </button>
+            </form>
+
+            <div id="success-message" class="hidden mt-4 p-4 bg-green-100 text-green-700 rounded-md">
+                Payment successful! Your subscription is now active.
+            </div>
+
+            <div id="error-message" class="hidden mt-4 p-4 bg-red-100 text-red-700 rounded-md">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Stripe with test publishable key
+        const stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx');
+        const elements = stripe.elements();
+        
+        const style = {
+            base: {
+                color: "#32325d",
+                fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                fontSmoothing: "antialiased",
+                fontSize: "16px",
+                "::placeholder": {
+                    color: "#aab7c4"
+                }
+            },
+            invalid: {
+                color: "#fa755a",
+                iconColor: "#fa755a"
+            }
+        };
+
+        const card = elements.create('card', {style});
+        card.mount('#card-element');
+
+        const form = document.getElementById('payment-form');
+        const errorElement = document.getElementById('card-errors');
+        const submitButton = document.getElementById('submit-button');
+        const loadingElement = document.getElementById('loading');
+        const buttonText = document.getElementById('button-text');
+        const successMessage = document.getElementById('success-message');
+        const errorMessage = document.getElementById('error-message');
+
+        const setLoading = (isLoading) => {
+            if (isLoading) {
+                submitButton.disabled = true;
+                loadingElement.classList.add('active');
+                buttonText.classList.add('hidden');
+            } else {
+                submitButton.disabled = false;
+                loadingElement.classList.remove('active');
+                buttonText.classList.remove('hidden');
+            }
+        };
+
+        card.addEventListener('change', ({error}) => {
+            if (error) {
+                errorElement.textContent = error.message;
+            } else {
+                errorElement.textContent = '';
+            }
+        });
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            setLoading(true);
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+
+            const email = document.getElementById('email').value;
+
+            try {
+                const {paymentMethod, error} = await stripe.createPaymentMethod({
+                    type: 'card',
+                    card: card,
+                    billing_details: {
+                        email: email,
+                    }
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                // Create subscription
+                const response = await fetch('/create-subscription', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        paymentMethodId: paymentMethod.id,
+                    }),
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Confirm payment if needed
+                if (data.clientSecret) {
+                    const {error: confirmError} = await stripe.confirmCardPayment(data.clientSecret);
+                    if (confirmError) {
+                        throw confirmError;
+                    }
+                }
+
+                // Show success message
+                successMessage.classList.remove('hidden');
+                form.classList.add('hidden');
+
+            } catch (error) {
+                errorMessage.textContent = error.message;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>
